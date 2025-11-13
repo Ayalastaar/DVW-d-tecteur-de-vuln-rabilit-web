@@ -1,0 +1,32 @@
+[
+  {
+    "id": 2,
+    "target_url": "http://127.0.0.1:5502/secu-g34-tp3-css-lamiatee01/Step13_responsive/index.html",
+    "timestamp": "2025-11-07 15:00:13",
+    "vulnerabilities_count": 6,
+    "scan_duration": 0.407313,
+    "status": "Terminé",
+    "vulnerabilities": {
+      "Critique": 0,
+      "Haute": 2,
+      "Moyenne": 4,
+      "Faible": 0,
+      "Information": 0
+    }
+  },
+  {
+    "id": 1,
+    "target_url": "http://127.0.0.1:5501/index.html",
+    "timestamp": "2025-11-07 14:31:35",
+    "vulnerabilities_count": 6,
+    "scan_duration": 0.597818,
+    "status": "Terminé",
+    "vulnerabilities": {
+      "Critique": 0,
+      "Haute": 2,
+      "Moyenne": 4,
+      "Faible": 0,
+      "Information": 0
+    }
+  }
+]
