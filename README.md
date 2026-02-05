@@ -161,6 +161,7 @@ Patterns de Détection
 - **Headers Sécurité** : Configuration serveur optimale
 
 📁 Structure du Projet
+```
 ├── [__pycache__]
 │   ├── ai.cpython-314.pyc
 │   ├── scanner_engine.cpython-314.pyc
@@ -175,8 +176,9 @@ Patterns de Détection
 🔧 Configuration
 Fichier de Configuration
 un fichier scan_history.json à la racine :
-
+```
 json
+
 {
   "scanner": {
     "timeout": 30,
