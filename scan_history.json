@@ -1,10 +1,175 @@
 [
   {
-    "id": 2,
-    "target_url": "http://127.0.0.1:5502/secu-g34-tp3-css-lamiatee01/Step13_responsive/index.html",
-    "timestamp": "2025-11-07 15:00:13",
+    "id": 13,
+    "target_url": "http://www.maisonlumea.dz/",
+    "timestamp": "2026-02-05 13:31:19",
+    "vulnerabilities_count": 9,
+    "scan_duration": 0.825967,
+    "status": "Terminé",
+    "vulnerabilities": {
+      "Critique": 0,
+      "Haute": 5,
+      "Moyenne": 4,
+      "Faible": 0,
+      "Information": 0
+    }
+  },
+  {
+    "id": 12,
+    "target_url": "http://www.maisonlumea.dz/",
+    "timestamp": "2026-02-05 13:29:04",
+    "vulnerabilities_count": 9,
+    "scan_duration": 0.855409,
+    "status": "Terminé",
+    "vulnerabilities": {
+      "Critique": 0,
+      "Haute": 5,
+      "Moyenne": 4,
+      "Faible": 0,
+      "Information": 0
+    }
+  },
+  {
+    "id": 11,
+    "target_url": "http://www.maisonlumea.dz/",
+    "timestamp": "2026-02-05 12:24:36",
+    "vulnerabilities_count": 9,
+    "scan_duration": 0.604354,
+    "status": "Terminé",
+    "vulnerabilities": {
+      "Critique": 0,
+      "Haute": 5,
+      "Moyenne": 4,
+      "Faible": 0,
+      "Information": 0
+    }
+  },
+  {
+    "id": 10,
+    "target_url": "http://www.maisonlumea.dz/",
+    "timestamp": "2026-02-05 12:22:50",
+    "vulnerabilities_count": 9,
+    "scan_duration": 0.940314,
+    "status": "Terminé",
+    "vulnerabilities": {
+      "Critique": 0,
+      "Haute": 5,
+      "Moyenne": 4,
+      "Faible": 0,
+      "Information": 0
+    }
+  },
+  {
+    "id": 9,
+    "target_url": "http://www.maisonlumea.dz/",
+    "timestamp": "2026-02-05 12:00:50",
+    "vulnerabilities_count": 9,
+    "scan_duration": 0.81874,
+    "status": "Terminé",
+    "vulnerabilities": {
+      "Critique": 0,
+      "Haute": 5,
+      "Moyenne": 4,
+      "Faible": 0,
+      "Information": 0
+    }
+  },
+  {
+    "id": 8,
+    "target_url": "http://www.maisonlumea.dz/",
+    "timestamp": "2026-02-05 11:50:48",
+    "vulnerabilities_count": 9,
+    "scan_duration": 0.63806,
+    "status": "Terminé",
+    "vulnerabilities": {
+      "Critique": 0,
+      "Haute": 5,
+      "Moyenne": 4,
+      "Faible": 0,
+      "Information": 0
+    }
+  },
+  {
+    "id": 7,
+    "target_url": "http://www.maisonlumea.dz/",
+    "timestamp": "2026-02-04 16:22:07",
+    "vulnerabilities_count": 9,
+    "scan_duration": 0.845163,
+    "status": "Terminé",
+    "vulnerabilities": {
+      "Critique": 0,
+      "Haute": 5,
+      "Moyenne": 4,
+      "Faible": 0,
+      "Information": 0
+    }
+  },
+  {
+    "id": 6,
+    "target_url": "http://127.0.0.1:5503/secu-g34-tp4-js2-lamiatee01/etape6/index.html",
+    "timestamp": "2025-11-25 21:13:24",
     "vulnerabilities_count": 6,
-    "scan_duration": 0.407313,
+    "scan_duration": 3.688696,
+    "status": "Terminé",
+    "vulnerabilities": {
+      "Critique": 0,
+      "Haute": 2,
+      "Moyenne": 4,
+      "Faible": 0,
+      "Information": 0
+    }
+  },
+  {
+    "id": 5,
+    "target_url": "http://127.0.0.1:5502/step8.html",
+    "timestamp": "2025-11-24 10:23:00",
+    "vulnerabilities_count": 7,
+    "scan_duration": 0.501466,
+    "status": "Terminé",
+    "vulnerabilities": {
+      "Critique": 0,
+      "Haute": 3,
+      "Moyenne": 4,
+      "Faible": 0,
+      "Information": 0
+    }
+  },
+  {
+    "id": 4,
+    "target_url": "http://127.0.0.1:5501/index.html",
+    "timestamp": "2025-11-24 10:21:09",
+    "vulnerabilities_count": 6,
+    "scan_duration": 0.378273,
+    "status": "Terminé",
+    "vulnerabilities": {
+      "Critique": 0,
+      "Haute": 2,
+      "Moyenne": 4,
+      "Faible": 0,
+      "Information": 0
+    }
+  },
+  {
+    "id": 3,
+    "target_url": "http://127.0.0.1:5500/index.html",
+    "timestamp": "2025-11-24 08:58:45",
+    "vulnerabilities_count": 7,
+    "scan_duration": 0.794022,
+    "status": "Terminé",
+    "vulnerabilities": {
+      "Critique": 0,
+      "Haute": 3,
+      "Moyenne": 4,
+      "Faible": 0,
+      "Information": 0
+    }
+  },
+  {
+    "id": 2,
+    "target_url": "http://127.0.0.1:5501/index.html",
+    "timestamp": "2025-11-19 10:09:24",
+    "vulnerabilities_count": 6,
+    "scan_duration": 0.516264,
     "status": "Terminé",
     "vulnerabilities": {
       "Critique": 0,
@@ -17,9 +182,9 @@
   {
     "id": 1,
     "target_url": "http://127.0.0.1:5501/index.html",
-    "timestamp": "2025-11-07 14:31:35",
+    "timestamp": "2025-11-19 09:50:06",
     "vulnerabilities_count": 6,
-    "scan_duration": 0.597818,
+    "scan_duration": 0.546369,
     "status": "Terminé",
     "vulnerabilities": {
       "Critique": 0,
