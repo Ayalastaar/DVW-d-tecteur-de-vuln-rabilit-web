@@ -209,7 +209,7 @@ json
 
 ## 📊 Exemples de Sortie
 ## Rapport d'Analyse
-text
+
 ========================================
 ### 📊 RAPPORT D'ANALYSE - https://exemple.com
 ========================================
@@ -244,10 +244,11 @@ text
 
 
 ## Tests
-bash
+### bash
+```
 # Lancer les tests unitaires
 python -m pytest tests/
-
+```
 
 ## ⚡ Performances
 - Fonctionnalité	Temps Moyen	Mémoire Utilisée
