@@ -145,12 +145,12 @@ Détection Multi-Langages
 - Corrections Intelligentes
 **python**
 
-# AVANT (vulnérable)
+### AVANT (vulnérable)
 cursor.execute(f"SELECT * FROM users WHERE id = {user_input}")
 
-# APRÈS (sécurisé)
+### APRÈS (sécurisé)
 cursor.execute("SELECT * FROM users WHERE id = %s", (user_input,))
-# SECURITY FIX: Utiliser des paramètres au lieu de f-strings
+## SECURITY FIX: Utiliser des paramètres au lieu de f-strings
 Patterns de Détection
 - **SQL Injection** : 15+ patterns spécifiques par langage
 
