@@ -10,7 +10,7 @@ import ssl
 import re
 
 # === MODÈLES ET MOTEUR D'ANALYSE ===
-class Severity:
+class Severity: 
     CRITICAL = "Critique"
     HIGH = "Haute"
     MEDIUM = "Moyenne"

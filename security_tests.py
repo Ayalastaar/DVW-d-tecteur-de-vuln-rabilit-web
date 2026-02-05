@@ -22,7 +22,7 @@ class AdvancedSecurityTests:
             
             # Trouver tous les formulaires
             forms = soup.find_all('form')
-            for form in forms:
+            for form in forms: 
                 form_action = form.get('action', '')
                 form_method = form.get('method', 'get').lower()
                 form_url = urljoin(self.target_url, form_action)

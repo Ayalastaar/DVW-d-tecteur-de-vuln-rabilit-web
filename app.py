@@ -1,12 +1,13 @@
 from  PyQt6.QtWidgets import (QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QGridLayout,
                              QPushButton, QGraphicsDropShadowEffect, QFrame, QLineEdit,
                              QStackedWidget, QListWidget, QListWidgetItem, QScrollArea, QSizePolicy,
-                             QProgressBar, QTextEdit, QMessageBox)
+                             QProgressBar, QTextEdit, QMessageBox, QFileDialog,QTabWidget,QDialog)
 from PyQt6.QtGui import QFont, QLinearGradient, QColor, QPainter
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
 import sys
 from datetime import datetime
 import json
+import re  # <-- Ajoutez cette ligne
 import os
 
 from scanner_engine import ScannerEngine, HistoryManager, Vulnerability, Severity
@@ -89,7 +90,8 @@ class TopNavigationBar(QWidget):
             ("🏠 Accueil", 0),
             ("🔍 Scanner", 1),
             ("📊 Historique", 2),
-            ("⚙️ Paramètres", 3)
+            ("🔧 Correction IA", 3),
+            ("⚙️ Paramètres", 4)
         ]
         
         for text, page_index in nav_items:
@@ -378,8 +380,8 @@ class WelcomePage(GradientWidget):
         actions = [
             ("🔍 Nouveau Scan", "Lancer une analyse de sécurité", 1, "background: rgba(0, 212, 255, 0.1); color: #00d4ff;"),
             ("📊 Voir Historique", "Consulter les analyses passées", 2, "background: rgba(255, 193, 7, 0.1); color: #ffc107;"),
-            ("⚙️ Paramètres", "Configurer les options", 3, "background: rgba(76, 175, 80, 0.1); color: #4caf50;"),
-            ("📈 Rapports", "Générer des rapports", 2, "background: rgba(156, 39, 176, 0.1); color: #9c27b0;"),
+            ("⚙️ Paramètres", "Configurer les options", 4, "background: rgba(76, 175, 80, 0.1); color: #4caf50;"),
+            ("🔧 Correction IA", "Analyser du code source", 3, "background: rgba(156, 39, 176, 0.1); color: #9c27b0;"),
         ]
         
         row, col = 0, 0
@@ -1196,6 +1198,785 @@ class SettingsPage(GradientWidget):
         widget.setLayout(layout)
         return widget
 
+class CodeCorrectionPage(GradientWidget):
+    def __init__(self, main_window):
+        super().__init__()
+        self.main_window = main_window
+        self.code_files = []
+        self.vulnerabilities_found = []
+        self.corrected_files = []  # Pour stocker les fichiers corrigés
+        self.init_ui()
+    
+    def init_ui(self):
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        
+        # Scroll area
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setStyleSheet("QScrollArea { border: none; background: transparent; }")
+        
+        main_widget = QWidget()
+        main_layout = QVBoxLayout(main_widget)
+        main_layout.setContentsMargins(20, 20, 20, 20)
+        main_layout.setSpacing(20)
+        
+        # Header
+        header = QLabel("🤖 Générateur IA de Code Sécurisé")
+        header.setFont(QFont("Segoe UI", 24, QFont.Weight.Bold))
+        header.setStyleSheet("color: #C527F5;")
+        
+        # Description
+        description = QLabel(
+            "Téléchargez vos fichiers source → L'IA analyse les vulnérabilités → "
+            "Recevez le code corrigé et sécurisé directement !"
+        )
+        description.setFont(QFont("Segoe UI", 12))
+        description.setStyleSheet("color: rgba(255, 255, 255, 0.8);")
+        description.setWordWrap(True)
+        
+        # Carte de dépôt de fichiers
+        drop_card = ModernCard()
+        drop_layout = QVBoxLayout(drop_card)
+        drop_layout.setContentsMargins(20, 30, 20, 30)
+        drop_layout.setSpacing(20)
+        
+        self.drop_label = QLabel("📁 Déposez vos fichiers de code source ici")
+        self.drop_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.drop_label.setAcceptDrops(True)
+        self.drop_label.dragEnterEvent = self.drag_enter_event
+        self.drop_label.dropEvent = self.drop_event
+        self.drop_label.mousePressEvent = self.browse_files
+        
+        self._update_drop_zone_style()
+        
+        self.drop_label.setMinimumHeight(200)
+        
+        drop_layout.addWidget(self.drop_label)
+        
+        # Bouton parcourir
+        browse_btn = ModernButton("📂 Parcourir les fichiers")
+        browse_btn.clicked.connect(self.browse_files)
+        browse_btn.setMinimumHeight(40)
+        
+        drop_layout.addWidget(browse_btn)
+        
+        # Liste des fichiers
+        files_label = QLabel("📄 Fichiers chargés:")
+        files_label.setFont(QFont("Segoe UI", 12, QFont.Weight.Bold))
+        files_label.setStyleSheet("color: white;")
+        
+        self.file_list = QListWidget()
+        self.file_list.setMaximumHeight(150)
+        self.file_list.setStyleSheet("""
+            QListWidget {
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 6px;
+                color: white;
+            }
+            QListWidget::item {
+                padding: 8px;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            }
+            QListWidget::item:selected {
+                background: rgba(0, 212, 255, 0.2);
+            }
+        """)
+        
+        # Section des vulnérabilités
+        vuln_section = QWidget()
+        vuln_layout = QVBoxLayout(vuln_section)
+        vuln_layout.setContentsMargins(0, 0, 0, 0)
+        vuln_layout.setSpacing(10)
+        
+        vuln_label = QLabel("🎯 Sélectionnez la vulnérabilité à corriger:")
+        vuln_label.setFont(QFont("Segoe UI", 14, QFont.Weight.Bold))
+        vuln_label.setStyleSheet("color: white;")
+        
+        # Boutons pour sélectionner la vulnérabilité
+        vuln_buttons_layout = QHBoxLayout()
+        
+        self.sql_btn = QPushButton("SQL Injection")
+        self.xss_btn = QPushButton("XSS")
+        self.csrf_btn = QPushButton("CSRF")
+        self.all_btn = QPushButton("Toutes")
+        
+        for btn in [self.sql_btn, self.xss_btn, self.csrf_btn, self.all_btn]:
+            btn.setCheckable(True)
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn.setMinimumHeight(35)
+            btn.setStyleSheet("""
+                QPushButton {
+                    background: rgba(197, 39, 245, 0.1);
+                    color: #C527F5;
+                    border: 1px solid rgba(197, 39, 245, 0.3);
+                    border-radius: 6px;
+                    padding: 8px 15px;
+                }
+                QPushButton:checked {
+                    background: #C527F5;
+                    color: white;
+                    font-weight: bold;
+                }
+                QPushButton:hover {
+                    background: rgba(197, 39, 245, 0.2);
+                }
+            """)
+            btn.clicked.connect(self.uncheck_other_buttons)
+            vuln_buttons_layout.addWidget(btn)
+        
+        # Sélection par défaut
+        self.sql_btn.setChecked(True)
+        self.selected_vulnerability = "SQL Injection"
+        
+        vuln_layout.addWidget(vuln_label)
+        vuln_layout.addLayout(vuln_buttons_layout)
+        
+        # Boutons d'action
+        buttons_layout = QHBoxLayout()
+        
+        clear_btn = ModernButton("🗑️ Effacer tout")
+        clear_btn.clicked.connect(self.clear_files)
+        
+        self.analyze_btn = ModernButton("🔍 Analyser seulement")
+        self.analyze_btn.clicked.connect(self.analyze_files)
+        self.analyze_btn.setEnabled(False)
+        self.analyze_btn.setStyleSheet("""
+            QPushButton {
+                background: #00d4ff;
+                color: white;
+                font-weight: 600;
+                border: none;
+                border-radius: 8px;
+            }
+            QPushButton:hover {
+                background: #00c4ef;
+            }
+            QPushButton:disabled {
+                background: rgba(255, 255, 255, 0.1);
+                color: rgba(255, 255, 255, 0.5);
+            }
+        """)
+        
+        self.generate_btn = ModernButton("🤖 Générer fichiers corrigés")
+        self.generate_btn.clicked.connect(self.generate_corrected_files)
+        self.generate_btn.setEnabled(False)
+        self.generate_btn.setStyleSheet("""
+            QPushButton {
+                background: #C527F5;
+                color: white;
+                font-weight: 600;
+                border: none;
+                border-radius: 8px;
+            }
+            QPushButton:hover {
+                background: #a020d0;
+            }
+            QPushButton:disabled {
+                background: rgba(255, 255, 255, 0.1);
+                color: rgba(255, 255, 255, 0.5);
+            }
+        """)
+        
+        buttons_layout.addWidget(clear_btn)
+        buttons_layout.addStretch()
+        buttons_layout.addWidget(self.analyze_btn)
+        buttons_layout.addWidget(self.generate_btn)
+        
+        # Onglets pour les résultats
+        self.results_tabs = QTabWidget()
+        self.results_tabs.setVisible(False)
+        
+        # Onglet 1: Suggestions
+        self.suggestions_tab = QWidget()
+        suggestions_layout = QVBoxLayout(self.suggestions_tab)
+        
+        self.suggestions_area = QTextEdit()
+        self.suggestions_area.setReadOnly(True)
+        self.suggestions_area.setStyleSheet("""
+            QTextEdit {
+                background: rgba(0, 0, 0, 0.2);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 8px;
+                color: white;
+                padding: 10px;
+                font-family: Consolas;
+                font-size: 11px;
+            }
+        """)
+        suggestions_layout.addWidget(self.suggestions_area)
+        
+        # Onglet 2: Code corrigé
+        self.corrected_tab = QWidget()
+        corrected_layout = QVBoxLayout(self.corrected_tab)
+        
+        self.corrected_area = QTextEdit()
+        self.corrected_area.setReadOnly(True)
+        self.corrected_area.setStyleSheet("""
+            QTextEdit {
+                background: rgba(0, 0, 0, 0.2);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 8px;
+                color: #4caf50;
+                padding: 10px;
+                font-family: Consolas;
+                font-size: 11px;
+            }
+        """)
+        corrected_layout.addWidget(self.corrected_area)
+        
+        # Onglet 3: Téléchargement
+        self.download_tab = QWidget()
+        download_layout = QVBoxLayout(self.download_tab)
+        
+        download_label = QLabel("💾 Télécharger les fichiers corrigés")
+        download_label.setFont(QFont("Segoe UI", 14, QFont.Weight.Bold))
+        download_label.setStyleSheet("color: white;")
+        
+        self.download_list = QListWidget()
+        self.download_list.setStyleSheet("""
+            QListWidget {
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 6px;
+                color: white;
+            }
+            QListWidget::item {
+                padding: 10px;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            }
+        """)
+        
+        download_btn_layout = QHBoxLayout()
+        
+        preview_btn = ModernButton("👁️ Aperçu")
+        preview_btn.clicked.connect(self.preview_corrected_file)
+        
+        download_single_btn = ModernButton("📥 Télécharger sélection")
+        download_single_btn.clicked.connect(self.download_selected_file)
+        
+        download_all_btn = ModernButton("📦 Télécharger tous")
+        download_all_btn.clicked.connect(self.download_all_files)
+        
+        download_btn_layout.addWidget(preview_btn)
+        download_btn_layout.addWidget(download_single_btn)
+        download_btn_layout.addWidget(download_all_btn)
+        
+        download_layout.addWidget(download_label)
+        download_layout.addWidget(self.download_list)
+        download_layout.addLayout(download_btn_layout)
+        
+        # Ajouter les onglets
+        self.results_tabs.addTab(self.suggestions_tab, "🔍 Suggestions")
+        self.results_tabs.addTab(self.corrected_tab, "💾 Code corrigé")
+        self.results_tabs.addTab(self.download_tab, "📥 Téléchargement")
+        
+        # Assemblage
+        main_layout.addWidget(header)
+        main_layout.addWidget(description)
+        main_layout.addWidget(drop_card)
+        main_layout.addWidget(files_label)
+        main_layout.addWidget(self.file_list)
+        main_layout.addWidget(vuln_section)
+        main_layout.addLayout(buttons_layout)
+        main_layout.addWidget(self.results_tabs)
+        
+        scroll.setWidget(main_widget)
+        layout.addWidget(scroll)
+    
+    def uncheck_other_buttons(self):
+        """Décoche les autres boutons quand un est sélectionné"""
+        sender = self.sender()
+        if sender.isChecked():
+            for btn in [self.sql_btn, self.xss_btn, self.csrf_btn, self.all_btn]:
+                if btn != sender:
+                    btn.setChecked(False)
+            self.selected_vulnerability = sender.text()
+    
+    def _update_drop_zone_style(self, hovering=False):
+        style = """
+            QLabel {
+                background: rgba(197, 39, 245, 0.08);
+                border: 2px dashed rgba(197, 39, 245, 0.3);
+                border-radius: 12px;
+                color: #C527F5;
+                font-size: 16px;
+                padding: 40px;
+            }
+        """
+        if hovering:
+            style = style.replace("rgba(197, 39, 245, 0.3)", "#C527F5")
+            style = style.replace("rgba(197, 39, 245, 0.08)", "rgba(197, 39, 245, 0.15)")
+        
+        self.drop_label.setStyleSheet(style)
+    
+    def drag_enter_event(self, event):
+        if event.mimeData().hasUrls():
+            self._update_drop_zone_style(True)
+            event.acceptProposedAction()
+    
+    def drag_leave_event(self, event):
+        self._update_drop_zone_style(False)
+    
+    def drop_event(self, event):
+        self._update_drop_zone_style(False)
+        for url in event.mimeData().urls():
+            self.add_file(url.toLocalFile())
+        event.acceptProposedAction()
+    
+    def browse_files(self, event=None):
+        files, _ = QFileDialog.getOpenFileNames(
+            self,
+            "Sélectionnez des fichiers source",
+            "",
+            "Fichiers source (*.php *.js *.py *.html *.java *.cs *.go *.rb *.ts);;Tous les fichiers (*.*)"
+        )
+        for file_path in files:
+            self.add_file(file_path)
+    
+    def add_file(self, file_path: str):
+        try:
+            filename = os.path.basename(file_path)
+            
+            # Vérifier l'extension
+            supported_ext = ['.php', '.js', '.py', '.html', '.java', '.cs', '.go', '.rb', '.ts']
+            if not any(filename.lower().endswith(ext) for ext in supported_ext):
+                QMessageBox.warning(self, "Format non supporté", 
+                                  f"Le format de {filename} n'est pas supporté.")
+                return
+            
+            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                content = f.read()
+            
+            # Ajouter à la liste des fichiers
+            self.code_files.append({
+                'path': file_path,
+                'filename': filename,
+                'content': content,
+                'language': self.detect_language(filename),
+                'original_content': content  # Sauvegarde du contenu original
+            })
+            
+            # Ajouter à la liste affichée
+            lang_icon = self.get_language_icon(self.code_files[-1]['language'])
+            item = QListWidgetItem(f"{lang_icon} {filename}")
+            self.file_list.addItem(item)
+            
+            # Activer les boutons
+            self.analyze_btn.setEnabled(len(self.code_files) > 0)
+            self.generate_btn.setEnabled(len(self.code_files) > 0)
+            
+        except Exception as e:
+            QMessageBox.warning(self, "Erreur", f"Impossible de lire {file_path}: {str(e)}")
+    
+    def detect_language(self, filename):
+        """Détecte le langage du fichier"""
+        ext_map = {
+            '.php': 'PHP',
+            '.js': 'JavaScript',
+            '.ts': 'TypeScript',
+            '.py': 'Python',
+            '.html': 'HTML',
+            '.java': 'Java',
+            '.cs': 'C#',
+            '.go': 'Go',
+            '.rb': 'Ruby'
+        }
+        
+        for ext, lang in ext_map.items():
+            if filename.lower().endswith(ext):
+                return lang
+        return 'Unknown'
+    
+    def get_language_icon(self, language):
+        """Retourne une icône pour le langage"""
+        icons = {
+            'PHP': '🐘',
+            'JavaScript': '📜',
+            'TypeScript': '📘',
+            'Python': '🐍',
+            'HTML': '🌐',
+            'Java': '☕',
+            'C#': '#️⃣',
+            'Go': '🐹',
+            'Ruby': '💎'
+        }
+        return icons.get(language, '📄')
+    
+    def clear_files(self):
+        """Efface tous les fichiers"""
+        self.code_files.clear()
+        self.corrected_files.clear()
+        self.file_list.clear()
+        self.download_list.clear()
+        self.analyze_btn.setEnabled(False)
+        self.generate_btn.setEnabled(False)
+        self.suggestions_area.clear()
+        self.corrected_area.clear()
+        self.results_tabs.setVisible(False)
+    
+    def analyze_files(self):
+        """Analyse les fichiers et montre les suggestions"""
+        if not self.code_files:
+            return
+        
+        self.results_tabs.setVisible(True)
+        self.results_tabs.setCurrentIndex(0)  # Onglet Suggestions
+        self.suggestions_area.clear()
+        
+        self.suggestions_area.append("🚀 ANALYSE DES FICHIERS...")
+        self.suggestions_area.append(f"🎯 Vulnérabilité cible: {self.selected_vulnerability}")
+        self.suggestions_area.append(f"📁 Nombre de fichiers: {len(self.code_files)}\n")
+        
+        total_problems = 0
+        
+        for file_info in self.code_files:
+            filename = file_info['filename']
+            language = file_info['language']
+            
+            self.suggestions_area.append(f"\n{'='*60}")
+            self.suggestions_area.append(f"📄 FICHIER: {filename} ({language})")
+            
+            # Analyser le code
+            problems = self.analyze_code_for_vulnerabilities(
+                file_info['content'], 
+                language, 
+                self.selected_vulnerability
+            )
+            
+            if problems:
+                total_problems += len(problems)
+                self.suggestions_area.append(f"⚠️  {len(problems)} PROBLEME(S) DETECTE(S):")
+                
+                for i, problem in enumerate(problems, 1):
+                    self.suggestions_area.append(f"\n  🔴 Problème {i}:")
+                    self.suggestions_area.append(f"     📍 Ligne {problem['line']}:")
+                    self.suggestions_area.append(f"        {problem['code'][:80]}...")
+                    self.suggestions_area.append(f"     🎯 Type: {problem['type']}")
+                    self.suggestions_area.append(f"     📝 Description: {problem['description']}")
+                    self.suggestions_area.append(f"     💡 Suggestion: {problem['suggestion']}")
+            else:
+                self.suggestions_area.append("✅ Aucun problème détecté")
+        
+        self.suggestions_area.append(f"\n{'='*60}")
+        self.suggestions_area.append(f"📊 RESUME: {total_problems} problème(s) trouvé(s) au total")
+        self.suggestions_area.append("\n👉 Cliquez sur 'Générer fichiers corrigés' pour obtenir les corrections")
+    
+    def generate_corrected_files(self):
+        """Génère les fichiers corrigés"""
+        if not self.code_files:
+            return
+        
+        self.corrected_files.clear()
+        self.download_list.clear()
+        self.results_tabs.setVisible(True)
+        self.results_tabs.setCurrentIndex(1)  # Onglet Code corrigé
+        self.corrected_area.clear()
+        
+        self.corrected_area.append("🤖 GENERATION DES FICHIERS CORRIGES...\n")
+        self.corrected_area.append(f"🎯 Vulnérabilité cible: {self.selected_vulnerability}\n")
+        
+        for file_info in self.code_files:
+            filename = file_info['filename']
+            language = file_info['language']
+            original_content = file_info['content']
+            
+            self.corrected_area.append(f"\n{'='*60}")
+            self.corrected_area.append(f"📄 {filename} ({language})")
+            
+            # Générer le code corrigé
+            corrected_content = self.apply_corrections(original_content, language, self.selected_vulnerability)
+            
+            # Sauvegarder le fichier corrigé
+            corrected_filename = f"corrige_{filename}"
+            corrected_file = {
+                'original_name': filename,
+                'corrected_name': corrected_filename,
+                'language': language,
+                'content': corrected_content,
+                'path': os.path.join(os.path.dirname(file_info['path']), corrected_filename)
+            }
+            
+            self.corrected_files.append(corrected_file)
+            
+            # Afficher un aperçu
+            self.corrected_area.append(f"📝 Fichier généré: {corrected_filename}")
+            self.corrected_area.append(f"💾 Taille: {len(corrected_content)} caractères")
+            
+            # Ajouter à la liste de téléchargement
+            item = QListWidgetItem(f"📄 {corrected_filename}")
+            self.download_list.addItem(item)
+            
+            # Afficher un extrait du code corrigé
+            self.corrected_area.append("\n📋 Extrait du code corrigé:")
+            lines = corrected_content.split('\n')[:5]
+            for line in lines:
+                self.corrected_area.append(f"   {line}")
+            if len(corrected_content.split('\n')) > 5:
+                self.corrected_area.append("   ...")
+        
+        self.corrected_area.append(f"\n{'='*60}")
+        self.corrected_area.append(f"✅ {len(self.corrected_files)} fichier(s) corrigé(s) généré(s)")
+        self.corrected_area.append("👉 Allez à l'onglet 'Téléchargement' pour récupérer vos fichiers")
+        
+        # Basculer vers l'onglet téléchargement
+        self.results_tabs.setCurrentIndex(2)
+    
+    # AJOUT DES FONCTIONS DE VULNÉRABILITÉS
+    def get_vulnerability_patterns(self, language, vuln_type):
+        """Retourne les patterns de recherche pour une vulnérabilité donnée"""
+        patterns = {
+            'SQL Injection': {
+                'PHP': [
+                    (r'\$_(GET|POST|REQUEST)\[.*?\].*?\$sql', "Variable utilisateur dans requête SQL"),
+                    (r'mysql_query.*?\$', "mysql_query avec variable"),
+                    (r'\$sql\s*=\s*["\'].*?\$.*?["\']', "Concaténation SQL dangereuse"),
+                ],
+                'Python': [
+                    (r'cursor\.execute.*?%.*?\$', "Formatage SQL dangereux"),
+                    (r'cursor\.execute\(f["\'].*?["\']\)', "f-string dans SQL"),
+                ],
+                'Java': [
+                    (r'Statement\.execute.*?\+\s*request', "Concaténation SQL"),
+                    (r'PreparedStatement.*?setString.*?\).*?execute', "Mauvaise utilisation PreparedStatement"),
+                ]
+            },
+            'XSS': {
+                'PHP': [
+                    (r'echo\s+\$_(GET|POST|REQUEST)', "Écho direct d'input utilisateur"),
+                    (r'print\s+\$_(GET|POST|REQUEST)', "Print direct d'input"),
+                ],
+                'JavaScript': [
+                    (r'innerHTML\s*=\s*.*?location', "innerHTML avec URL"),
+                    (r'document\.write.*?\)', "document.write non sécurisé"),
+                ],
+                'HTML': [
+                    (r'<script>.*?\$.*?</script>', "Script avec variable"),
+                ]
+            },
+            'CSRF': {
+                'HTML': [
+                    (r'<form.*?>.*?</form>', "Formulaire sans token CSRF"),
+                ]
+            }
+        }
+        
+        # Retourne les patterns pour le langage et vulnérabilité spécifiés
+        lang_patterns = patterns.get(vuln_type, {}).get(language, [])
+        if not lang_patterns:
+            # Pattern générique
+            lang_patterns = [(r'\$', f"Recherche de variables potentiellement dangereuses pour {vuln_type}")]
+        
+        return lang_patterns
+    
+    def generate_correction(self, finding, language):
+        """Génère une correction pour une vulnérabilité"""
+        corrections = {
+            'SQL Injection': {
+                'PHP': "Utiliser des requêtes préparées: $stmt = $pdo->prepare('SELECT * FROM table WHERE id = ?'); $stmt->execute([$value]);",
+                'Python': "Utiliser des paramètres: cursor.execute('SELECT * FROM table WHERE id = %s', (value,))",
+                'Java': "Utiliser PreparedStatement: PreparedStatement ps = conn.prepareStatement('SELECT * FROM table WHERE id = ?'); ps.setString(1, value);"
+            },
+            'XSS': {
+                'PHP': "Échapper les sorties: echo htmlspecialchars($input, ENT_QUOTES, 'UTF-8');",
+                'JavaScript': "Utiliser textContent au lieu de innerHTML",
+                'HTML': "Échapper les caractères spéciaux avec des entités HTML"
+            },
+            'CSRF': {
+                'HTML': "Ajouter un token CSRF: <input type='hidden' name='csrf_token' value='<?php echo $_SESSION[\"csrf_token\"]; ?>'>"
+            }
+        }
+        
+        # Récupère la correction spécifique au langage
+        correction = corrections.get(finding, {}).get(language, "")
+        
+        # Si pas de correction spécifique, message générique
+        if not correction:
+            correction = f"Pour corriger {finding} en {language}, utilisez des pratiques de sécurité standard comme la validation d'entrée et l'échappement de sortie."
+        
+        return correction
+    
+    def analyze_code_for_vulnerabilities(self, content, language, vuln_type):
+        """Analyse le code pour trouver des vulnérabilités"""
+        import re
+        
+        problems = []
+        lines = content.split('\n')
+        
+        # Si "Toutes" est sélectionné, analyser pour toutes les vulnérabilités
+        if vuln_type == "Toutes":
+            vuln_types = ['SQL Injection', 'XSS', 'CSRF']
+        else:
+            vuln_types = [vuln_type]
+        
+        for current_vuln_type in vuln_types:
+            # Récupérer les patterns pour cette vulnérabilité
+            patterns = self.get_vulnerability_patterns(language, current_vuln_type)
+            
+            for line_num, line in enumerate(lines, 1):
+                for pattern, description in patterns:
+                    if re.search(pattern, line, re.IGNORECASE):
+                        # Générer une suggestion de correction
+                        suggestion = self.generate_correction(current_vuln_type, language)
+                        
+                        problems.append({
+                            'line': line_num,
+                            'code': line.strip()[:100],
+                            'type': current_vuln_type,
+                            'description': description,
+                            'suggestion': suggestion
+                        })
+        
+        return problems
+    
+    def apply_corrections(self, content, language, vuln_type):
+        """Applique les corrections au code"""
+        import re
+        
+        corrected_lines = content.split('\n')
+        
+        # Si "Toutes" est sélectionné, appliquer toutes les corrections
+        if vuln_type == "Toutes":
+            vuln_types = ['SQL Injection', 'XSS', 'CSRF']
+        else:
+            vuln_types = [vuln_type]
+        
+        for i, line in enumerate(corrected_lines):
+            for current_vuln_type in vuln_types:
+                patterns = self.get_vulnerability_patterns(language, current_vuln_type)
+                
+                for pattern, description in patterns:
+                    if re.search(pattern, line, re.IGNORECASE):
+                        # Générer une correction
+                        correction = self.generate_correction(current_vuln_type, language)
+                        
+                        # Ajouter un commentaire avec la correction
+                        if language in ['PHP', 'JavaScript', 'Java', 'C#']:
+                            corrected_lines[i] = f"{line}  // SECURITY: {correction[:60]}..."
+                        elif language == 'Python':
+                            corrected_lines[i] = f"{line}  # SECURITY: {correction[:60]}..."
+                        elif language == 'HTML':
+                            corrected_lines[i] = f"{line}  <!-- SECURITY: {correction[:60]}... -->"
+                        
+                        break  # On applique une seule correction par ligne pour éviter les conflits
+        
+        return '\n'.join(corrected_lines)
+    
+    def preview_corrected_file(self):
+        """Affiche un aperçu du fichier corrigé sélectionné"""
+        selected_items = self.download_list.selectedItems()
+        if not selected_items:
+            QMessageBox.warning(self, "Sélection", "Veuillez sélectionner un fichier à prévisualiser.")
+            return
+        
+        filename = selected_items[0].text().replace("📄 ", "")
+        
+        # Trouver le fichier correspondant
+        for corrected_file in self.corrected_files:
+            if corrected_file['corrected_name'] == filename:
+                # Créer une fenêtre de prévisualisation
+                preview_dialog = QDialog(self)
+                preview_dialog.setWindowTitle(f"Aperçu: {filename}")
+                preview_dialog.setGeometry(100, 100, 800, 600)
+                
+                layout = QVBoxLayout(preview_dialog)
+                
+                header = QLabel(f"📋 Aperçu de: {filename}")
+                header.setFont(QFont("Segoe UI", 12, QFont.Weight.Bold))
+                header.setStyleSheet("color: #C527F5;")
+                
+                text_edit = QTextEdit()
+                text_edit.setText(corrected_file['content'])
+                text_edit.setReadOnly(True)
+                text_edit.setFont(QFont("Consolas", 10))
+                text_edit.setStyleSheet("""
+                    QTextEdit {
+                        background: #1e1e1e;
+                        color: #d4d4d4;
+                        font-family: Consolas;
+                    }
+                """)
+                
+                layout.addWidget(header)
+                layout.addWidget(text_edit)
+                
+                preview_dialog.exec()
+                return
+    
+    def download_selected_file(self):
+        """Télécharge le fichier corrigé sélectionné"""
+        selected_items = self.download_list.selectedItems()
+        if not selected_items:
+            QMessageBox.warning(self, "Sélection", "Veuillez sélectionner un fichier à télécharger.")
+            return
+        
+        for item in selected_items:
+            filename = item.text().replace("📄 ", "")
+            
+            # Trouver le fichier correspondant
+            for corrected_file in self.corrected_files:
+                if corrected_file['corrected_name'] == filename:
+                    # Demander où sauvegarder
+                    save_path, _ = QFileDialog.getSaveFileName(
+                        self,
+                        f"Sauvegarder {filename}",
+                        filename,
+                        f"Fichiers (*.{self.get_extension(corrected_file['language'])});;Tous les fichiers (*.*)"
+                    )
+                    
+                    if save_path:
+                        try:
+                            with open(save_path, 'w', encoding='utf-8') as f:
+                                f.write(corrected_file['content'])
+                            
+                            QMessageBox.information(self, "Succès", 
+                                                  f"Fichier sauvegardé:\n{save_path}")
+                        except Exception as e:
+                            QMessageBox.warning(self, "Erreur", 
+                                              f"Impossible de sauvegarder: {str(e)}")
+    
+    def download_all_files(self):
+        """Télécharge tous les fichiers corrigés"""
+        if not self.corrected_files:
+            QMessageBox.warning(self, "Aucun fichier", "Aucun fichier corrigé à télécharger.")
+            return
+        
+        # Demander un dossier de destination
+        folder = QFileDialog.getExistingDirectory(
+            self,
+            "Sélectionnez un dossier pour sauvegarder les fichiers corrigés"
+        )
+        
+        if folder:
+            saved_count = 0
+            for corrected_file in self.corrected_files:
+                save_path = os.path.join(folder, corrected_file['corrected_name'])
+                try:
+                    with open(save_path, 'w', encoding='utf-8') as f:
+                        f.write(corrected_file['content'])
+                    saved_count += 1
+                except Exception as e:
+                    QMessageBox.warning(self, "Erreur", 
+                                      f"Erreur avec {corrected_file['corrected_name']}: {str(e)}")
+            
+            QMessageBox.information(self, "Succès", 
+                                  f"{saved_count}/{len(self.corrected_files)} fichiers sauvegardés dans:\n{folder}")
+    
+    def get_extension(self, language):
+        """Retourne l'extension de fichier pour un langage"""
+        extensions = {
+            'PHP': 'php',
+            'JavaScript': 'js',
+            'Python': 'py',
+            'HTML': 'html',
+            'Java': 'java',
+            'C#': 'cs',
+            'Go': 'go',
+            'Ruby': 'rb'
+        }
+        return extensions.get(language, 'txt')
 class MainApp(QWidget):
     def __init__(self):
         super().__init__()
@@ -1234,11 +2015,13 @@ class MainApp(QWidget):
         self.welcome_page = WelcomePage(self)
         self.scanner_page = ScannerPage(self)
         self.history_page = HistoryPage(self)
+        self.code_correction_page = CodeCorrectionPage(self)
         self.settings_page = SettingsPage(self)
         
         self.content_stack.addWidget(self.welcome_page)
         self.content_stack.addWidget(self.scanner_page)
         self.content_stack.addWidget(self.history_page)
+        self.content_stack.addWidget(self.code_correction_page)
         self.content_stack.addWidget(self.settings_page)
     
     def show_page(self, page_index):
