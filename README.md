@@ -172,7 +172,7 @@ Patterns de Détection
 ├── scanner_engine.py
 ├── scan_history.json
 ├── security_tests.py
-
+```
 🔧 Configuration
 Fichier de Configuration
 un fichier scan_history.json à la racine :
@@ -197,6 +197,7 @@ json
     "auto_update": true
   }
 }
+```
 Options Avancées
 Proxy support : Configuration des proxies HTTP/HTTPS
 
