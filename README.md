@@ -62,9 +62,10 @@ cd dwv-secure
 python -m venv venv
 
 ### 3. Activer l'environnement
-## Sur Windows :
+
+### Sur Windows :
 venv\Scripts\activate
-## Sur macOS/Linux :
+#### Sur macOS/Linux :
 source venv/bin/activate
 
 ### 4. Installer les dépendances
