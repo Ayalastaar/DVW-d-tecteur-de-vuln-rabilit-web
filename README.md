@@ -198,22 +198,22 @@ json
   }
 }
 ```
-Options Avancées
-Proxy support : Configuration des proxies HTTP/HTTPS
+### Options Avancées
+- Proxy support : Configuration des proxies HTTP/HTTPS
 
-Authentification : Support Basic Auth et tokens
+- Authentification : Support Basic Auth et tokens
 
-Rate limiting : Contrôle du débit des requêtes
+- Rate limiting : Contrôle du débit des requêtes
 
-Custom rules : Ajout de règles personnalisées
+- Custom rules : Ajout de règles personnalisées
 
-📊 Exemples de Sortie
-Rapport d'Analyse
+## 📊 Exemples de Sortie
+## Rapport d'Analyse
 text
 ========================================
-📊 RAPPORT D'ANALYSE - https://exemple.com
+### 📊 RAPPORT D'ANALYSE - https://exemple.com
 ========================================
-
+```
 🔍 Scan terminé en : 2m 15s
 📁 Pages analysées : 47
 ⚠️ Vulnérabilités trouvées : 8
@@ -232,6 +232,7 @@ text
 2. 🟠 XSS - /contact.php
    📍 Ligne 18 : echo $_POST['message'];
    💡 Correction : htmlspecialchars($_POST['message'], ENT_QUOTES)
+   ```
 ## 🛠️ Développement
 - Architecture
 
@@ -270,13 +271,13 @@ python -m pytest tests/
 ## Avertissements
 **⚠️ Cet outil est conçu pour des tests légitimes uniquement**
 
-**Utilisez uniquement sur vos propres systèmes**
+- **Utilisez uniquement sur vos propres systèmes**
 
-**Obtenez une autorisation écrite avant de scanner des systèmes tiers**
+- **Obtenez une autorisation écrite avant de scanner des systèmes tiers**
 
-**Respectez les lois locales et les politiques de sécurité**
+- **Respectez les lois locales et les politiques de sécurité**
 
-📄 Licence
+## 📄 Licence
 Ce projet est sous licence MIT. Voir le fichier LICENSE pour plus de détails.
 
 text
