@@ -52,22 +52,22 @@
 
 - Espace disque : 500 MB libre
 
-### Installation Rapide
+## Installation Rapide
 
-# 1. Cloner le dépôt
+ ### 1. Cloner le dépôt
 git clone https://github.com/votre-username/dvw-secure.git
 cd dwv-secure
 
-# 2. Créer un environnement virtuel (recommandé)
+ ### 2. Créer un environnement virtuel (recommandé)
 python -m venv venv
 
-# 3. Activer l'environnement
-# Sur Windows :
+### 3. Activer l'environnement
+## Sur Windows :
 venv\Scripts\activate
-# Sur macOS/Linux :
+## Sur macOS/Linux :
 source venv/bin/activate
 
-# 4. Installer les dépendances
+### 4. Installer les dépendances
 pip install -r requirements.txt
 
 ### Dépendances Principales
@@ -87,7 +87,7 @@ pip install -r requirements.txt
 - Lancer avec 
 python main.py
  
- ### Page d'Accueil
+ ## Page d'Accueil
 
 - **Vue d'ensemble** : Statistiques et état du système
 
