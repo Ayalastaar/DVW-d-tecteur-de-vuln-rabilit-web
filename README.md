@@ -146,10 +146,13 @@ Détection Multi-Langages
 **python**
 
 ### AVANT (vulnérable)
+```
 cursor.execute(f"SELECT * FROM users WHERE id = {user_input}")
-
+```
 ### APRÈS (sécurisé)
+```
 cursor.execute("SELECT * FROM users WHERE id = %s", (user_input,))
+```
 ## SECURITY FIX: Utiliser des paramètres au lieu de f-strings
 Patterns de Détection
 - **SQL Injection** : 15+ patterns spécifiques par langage
@@ -281,9 +284,9 @@ python -m pytest tests/
 ## 📄 Licence
 Ce projet est sous licence MIT. Voir le fichier LICENSE pour plus de détails.
 
-text
-MIT License
 
+### MIT License
+```
 Copyright (c) 2024
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -296,17 +299,18 @@ furnished to do so, subject to the following conditions:
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
 
+```
+### Roadmap
 
-Roadmap
-Support des API GraphQL
+- Support des API GraphQL
 
-Intégration CI/CD
+- Intégration CI/CD
 
-Plugins personnalisés
+- Plugins personnalisés
 
-Base de données de vulnérabilités
+- Base de données de vulnérabilités
 
-Rapports automatisés
+- Rapports automatisés
 
 ## 🌟 Fonctionnalités à Venir
 
